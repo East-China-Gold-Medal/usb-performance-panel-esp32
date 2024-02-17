@@ -1,0 +1,7 @@
+build/**
+.devcontainer/**
+.vscode/**
+
+# Managed by package manager.
+managed_components/**
+dependencies.lock

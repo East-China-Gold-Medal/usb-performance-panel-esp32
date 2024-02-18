@@ -1,6 +1,10 @@
+# Build files.
 build/**
 .devcontainer/**
+
+# Unwanted config files.
 .vscode/**
+sdkconfig.old
 
 # Managed by package manager.
 managed_components/**

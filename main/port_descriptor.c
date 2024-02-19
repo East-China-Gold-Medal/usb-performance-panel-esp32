@@ -48,22 +48,48 @@ tusb_desc_device_t usb_performance_panel_device = {
     .bNumConfigurations = 0x1
 };
 
-#define CONFIG_TOTAL_LEN  (TUD_CONFIG_DESC_LEN + 1*TUD_HID_DESC_LEN)
+const union {
+    const struct {
+        tusb_desc_configuration_t configuration;
+        tusb_desc_interface_t interface;
+        tusb_desc_endpoint_t endpoint;
+    } __attribute__((packed));
+    uint8_t bytes[1];
+} usb_performance_panel_configuration_descriptor = {
 
-tusb_desc_endpoint_t usb_performance_panel_endpoint0 =
-  {
-    .bLength          = sizeof(tusb_desc_endpoint_t),
-    .bDescriptorType  = TUSB_DESC_ENDPOINT,
-    .bEndpointAddress = 0,
-    .bmAttributes     = { .xfer = TUSB_XFER_CONTROL },
-    .wMaxPacketSize   = 64,
-    .bInterval        = 0
-  };
+    .configuration = {
+        .bLength = sizeof(tusb_desc_configuration_t),
+        .bDescriptorType = TUSB_DESC_CONFIGURATION,
+        .wTotalLength = sizeof(usb_performance_panel_configuration_descriptor),
+        .bNumInterfaces = 1,
+        .bConfigurationValue = 1,
+        .iConfiguration = 1,
+        .bmAttributes =  TU_BIT(7) | TUSB_DESC_CONFIG_ATT_REMOTE_WAKEUP,
+        .bMaxPower = 200 / 2
+    },
 
-uint8_t const usb_performance_panel_configuration_descriptor[] = {
-    TUD_CONFIG_DESCRIPTOR(1, 1, 0, CONFIG_TOTAL_LEN, TUSB_DESC_CONFIG_ATT_REMOTE_WAKEUP, 200),
-    // The initialization macro DOES NOT provide a CONTROL method.
-    7, TUSB_DESC_ENDPOINT, 0, TUSB_XFER_CONTROL, U16_TO_U8S_LE(TUD_OPT_HIGH_SPEED ? 512 : 64), 1,
+    .interface = {
+        .bLength = sizeof(tusb_desc_interface_t),
+        .bDescriptorType = TUSB_DESC_INTERFACE,
+        .bInterfaceNumber = 0,
+        .bAlternateSetting = 0,
+        .bNumEndpoints = 1,
+        .bInterfaceClass = TUSB_CLASS_VENDOR_SPECIFIC,
+        .bInterfaceSubClass = 0xFF,
+        .bInterfaceProtocol = 0xFF,
+        .iInterface = 2
+    },
+
+    .endpoint = {
+        .bLength = sizeof(tusb_desc_endpoint_t),
+        .bDescriptorType = TUSB_DESC_ENDPOINT,
+        .bEndpointAddress = 1,
+        .bmAttributes = {
+            .xfer = TUSB_XFER_CONTROL
+        },
+        .wMaxPacketSize = 0x40,
+        .bInterval = 0
+    },
 };
 
 const tinyusb_config_t panel_usb_config = {
@@ -71,5 +97,5 @@ const tinyusb_config_t panel_usb_config = {
     .string_descriptor = usb_performance_panel_string_desc,
     .string_descriptor_count = sizeof(usb_performance_panel_string_desc) / sizeof(const char*),
     .external_phy = false,
-    .configuration_descriptor = usb_performance_panel_configuration_descriptor
+    .configuration_descriptor = usb_performance_panel_configuration_descriptor.bytes
 };

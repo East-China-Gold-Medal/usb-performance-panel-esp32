@@ -6,6 +6,7 @@
 */
 
 #include "common.h"
+#include <device/usbd_pvt.h>
 
 const char *usb_performance_panel_string_desc[] =
 {
@@ -14,21 +15,6 @@ const char *usb_performance_panel_string_desc[] =
   "Enhanced USB Performance Panel", // 2: Product
   "CustomizedByHZ",                 // 3: Serials will use unique ID if possible
 };
-
-#if 0
-typedef struct {
-    union {
-        const tusb_desc_device_t *device_descriptor; /*!< Pointer to a device descriptor. If set to NULL, the TinyUSB device will use a default device descriptor whose values are set in Kconfig */
-        const tusb_desc_device_t *descriptor  __attribute__((deprecated)); /*!< Alias to `device_descriptor` for backward compatibility */
-    };
-    const char **string_descriptor;            /*!< Pointer to array of string descriptors. If set to NULL, TinyUSB device will use a default string descriptors whose values are set in Kconfig */
-    int string_descriptor_count;               /*!< Number of descriptors in above array */
-    bool external_phy;                         /*!< Should USB use an external PHY */
-    const uint8_t *configuration_descriptor;   /*!< Pointer to a configuration descriptor. If set to NULL, TinyUSB device will use a default configuration descriptor whose values are set in Kconfig */
-    bool self_powered;                         /*!< This is a self-powered USB device. USB VBUS must be monitored. */
-    int vbus_monitor_io;                       /*!< GPIO for VBUS monitoring. Ignored if not self_powered. */
-} tinyusb_config_t;
-#endif
 
 tusb_desc_device_t usb_performance_panel_device = {
     .bLength = sizeof(tusb_desc_device_t),
@@ -52,7 +38,6 @@ const union {
     const struct {
         tusb_desc_configuration_t configuration;
         tusb_desc_interface_t interface;
-        tusb_desc_endpoint_t endpoint;
     } __attribute__((packed));
     uint8_t bytes[1];
 } usb_performance_panel_configuration_descriptor = {
@@ -73,23 +58,13 @@ const union {
         .bDescriptorType = TUSB_DESC_INTERFACE,
         .bInterfaceNumber = 0,
         .bAlternateSetting = 0,
-        .bNumEndpoints = 1,
+        .bNumEndpoints = 0, // Only default Control endpoint.
         .bInterfaceClass = TUSB_CLASS_VENDOR_SPECIFIC,
         .bInterfaceSubClass = 0xFF,
         .bInterfaceProtocol = 0xFF,
         .iInterface = 2
     },
 
-    .endpoint = {
-        .bLength = sizeof(tusb_desc_endpoint_t),
-        .bDescriptorType = TUSB_DESC_ENDPOINT,
-        .bEndpointAddress = 1,
-        .bmAttributes = {
-            .xfer = TUSB_XFER_CONTROL
-        },
-        .wMaxPacketSize = 0x40,
-        .bInterval = 0
-    },
 };
 
 const tinyusb_config_t panel_usb_config = {
@@ -99,3 +74,68 @@ const tinyusb_config_t panel_usb_config = {
     .external_phy = false,
     .configuration_descriptor = usb_performance_panel_configuration_descriptor.bytes
 };
+
+extern void set_pwm (uint8_t channel,uint8_t value);
+
+bool tud_vendor_control_xfer_cb (uint8_t rhport, uint8_t stage, tusb_control_request_t const * request)
+{
+    uint8_t channel = (request->wValue & 0xFF00)>>16;
+    uint8_t value = request->wValue & 0xFF;
+    host_operation_command_t command = (host_operation_command_t)request->bRequest;
+    switch (command) {
+        case COMMAND_QUERY_CAP: {
+            const uint8_t channel_count = VOLTEMETER_CHANNEL_COUNT | VOLTMETER_CHANNEL_REPORT_RAW_VALUE;
+            return tud_control_xfer(rhport, request, (void*)&channel_count, 1);
+        }
+        case COMMAND_SET_USAGE: {
+            set_pwm(channel,value);
+            return true;
+        }
+    }
+    return false;
+}
+
+void usb_performance_panel_init (void)
+{
+    // Do nothing.
+}
+
+void usb_performance_panel_reset (uint8_t port)
+{
+    // Clear all values.
+    for(int i=0;i<VOLTEMETER_CHANNEL_COUNT;i++) {
+        set_pwm(voltmeter_channels[i],0);
+    }
+}
+
+uint16_t usb_performance_panel_open (uint8_t rhport, tusb_desc_interface_t const * desc_intf, uint16_t max_len)
+{
+    uint16_t drv_len = tu_desc_len(desc_intf);
+    // We don't have special handoff procedures for our device.
+
+    return drv_len;
+}
+
+bool usb_performance_panel_xfer_cb (uint8_t rhport, uint8_t ep_addr, xfer_result_t result, uint32_t xferred_bytes)
+{
+    // Nothing to do: we only have EP 0 Control.
+    return false;
+}
+
+usbd_class_driver_t performance_panel_driver = {
+#if CFG_TUSB_DEBUG >= 2
+        .name= "PerformancePanel",
+#endif
+        .init = usb_performance_panel_init,
+        .reset = usb_performance_panel_reset,
+        .open = usb_performance_panel_open,
+        .control_xfer_cb = tud_vendor_control_xfer_cb,
+        .xfer_cb = usb_performance_panel_xfer_cb,
+        .sof = NULL
+};
+
+usbd_class_driver_t const* usbd_app_driver_get_cb(uint8_t* driver_count)
+{
+    *driver_count = 1;
+    return &performance_panel_driver;
+}

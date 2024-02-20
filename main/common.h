@@ -9,11 +9,12 @@
 #define COMMON_H
 
 #include <stdlib.h>
-#include <esp_log.h>
-#include <freertos/FreeRTOS.h>
-#include <freertos/task.h>
 #include <tinyusb.h>
-#include <driver/gpio.h>
+
+#define VOLTEMETER_CHANNEL_COUNT ((uint8_t)16)
+
+// USB VID for vendor "East China Gold Medal".
+#define VID 0x0cbc
 
 // Available GPIOs:
 // 1 2 3 4 5 6 7 8 9 10 11 12 13 14 16 17 18 21 33 34 35 36 37 38 39 40
@@ -38,8 +39,6 @@ typedef const enum {
     VOLTMETER_CHANNEL_15=34
 } voltmeter_channel_t;
 
-#define VOLTEMETER_CHANNEL_COUNT ((uint8_t)16)
-
 typedef const enum {
     VOLTMETER_CHANNEL_REPORT_BITMAP=0,
     VOLTMETER_CHANNEL_REPORT_RAW_VALUE=0x80
@@ -51,9 +50,12 @@ typedef const enum {
     PID_HZ  = 0xcbc0  // HZ's "Enhanced" USB performance panel
 } panel_pid_t;
 
-// USB VID for vendor "East China Gold Medal".
-#define VID 0x0cbc
+typedef enum {
+    COMMAND_QUERY_CAP = 0xFF,
+    COMMAND_SET_USAGE = 0xFE
+} host_operation_command_t;
 
 extern const tinyusb_config_t panel_usb_config;
+extern const voltmeter_channel_t voltmeter_channels[VOLTEMETER_CHANNEL_COUNT];
 
 #endif

@@ -4,7 +4,6 @@
 #   SPDX-License-Identifier: WTFPL
 
 idf_component_register(
-    SRCS "port_descriptor.c" "monitor_main.c"
+    SRC_DIRS "."
     INCLUDE_DIRS "."
-    PRIV_REQUIRES driver
-    )
+    REQUIRES driver tinyusb)

@@ -12,6 +12,8 @@
 #include <tinyusb.h>
 
 #define VOLTEMETER_CHANNEL_COUNT ((uint8_t)16)
+#define MS_OS_20_DESC_LEN  0xB2
+#define BOS_TOTAL_LEN      (TUD_BOS_DESC_LEN + TUD_BOS_MICROSOFT_OS_DESC_LEN)
 
 // USB VID for vendor "East China Gold Medal".
 #define VID 0x0cbc
@@ -52,7 +54,8 @@ typedef const enum {
 
 typedef enum {
     COMMAND_QUERY_CAP = 0xFF,
-    COMMAND_SET_USAGE = 0xFE
+    COMMAND_SET_USAGE = 0xFE,
+    VENDOR_REQUEST_MICROSOFT = 0x2
 } host_operation_command_t;
 
 extern const tinyusb_config_t panel_usb_config;

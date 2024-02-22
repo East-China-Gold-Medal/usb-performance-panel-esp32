@@ -12,8 +12,16 @@
 #include <tinyusb.h>
 
 #define VOLTEMETER_CHANNEL_COUNT ((uint8_t)16)
+
+// Microsoft OS 2.0 Descriptor
+
 #define MS_OS_20_DESC_LEN  0xB2
 #define BOS_TOTAL_LEN      (TUD_BOS_DESC_LEN + TUD_BOS_MICROSOFT_OS_DESC_LEN)
+
+// Microsoft OS 1.0 Descriptor
+#define MS_OS_DESC_STRING_INDEX		0xEE
+#define MS_OS_DESC_STRING_LENGTH	0x12
+#define MS_OS_DESC_VENDOR_CODE_OFFSET	0x10
 
 // USB VID for vendor "East China Gold Medal".
 #define VID 0x0cbc
@@ -55,10 +63,18 @@ typedef const enum {
 typedef enum {
     COMMAND_QUERY_CAP = 0xFF,
     COMMAND_SET_USAGE = 0xFE,
-    VENDOR_REQUEST_MICROSOFT = 0x2
+    VENDOR_REQUEST_MICROSOFT_2_0 = 0x2,
+    VENDOR_REQUEST_MICROSOFT_1_0 = 0x1
 } host_operation_command_t;
 
 extern const tinyusb_config_t panel_usb_config;
 extern const voltmeter_channel_t voltmeter_channels[VOLTEMETER_CHANNEL_COUNT];
+extern const char *usb_performance_panel_string_desc[];
+extern const int usb_performance_panel_string_desc_size;
+extern const uint8_t desc_ms_os_20[];
+extern const uint8_t desc_ms_os_10_str[];
+extern const uint8_t desc_bos[];
+extern const uint8_t desc_ms_os_10_header[];
+extern const uint8_t desc_ms_os_10_detail[];
 
 #endif

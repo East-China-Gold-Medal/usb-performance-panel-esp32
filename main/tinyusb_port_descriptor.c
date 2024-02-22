@@ -1,4 +1,4 @@
-/* @file port_descriptor.c
+/* @file tinyusb_port_descriptor.c
 
     USB port descriptor to be reported to OS.
     SPDX-License-Identifier: WTFPL
@@ -15,6 +15,7 @@ const char *usb_performance_panel_string_desc[] =
   "Enhanced USB Performance Panel", // 2: Product
   "CustomizedByHZ",                 // 3: Serials will use unique ID if possible
 };
+const int usb_performance_panel_string_desc_size = sizeof(usb_performance_panel_string_desc) / sizeof(const char*);
 
 tusb_desc_device_t usb_performance_panel_device = {
     .bLength = sizeof(tusb_desc_device_t),
@@ -70,13 +71,12 @@ const union {
 const tinyusb_config_t panel_usb_config = {
     .device_descriptor = &usb_performance_panel_device,
     .string_descriptor = usb_performance_panel_string_desc,
-    .string_descriptor_count = sizeof(usb_performance_panel_string_desc) / sizeof(const char*),
+    .string_descriptor_count = usb_performance_panel_string_desc_size,
     .external_phy = false,
     .configuration_descriptor = usb_performance_panel_configuration_descriptor.bytes
 };
 
-const uint8_t desc_ms_os_20[] =
-{
+const uint8_t desc_ms_os_20[] = {
     // Set header: length, type, windows version, total length
     U16_TO_U8S_LE(0x000A), U16_TO_U8S_LE(MS_OS_20_SET_HEADER_DESCRIPTOR), U32_TO_U8S_LE(0x06030000), U16_TO_U8S_LE(MS_OS_20_DESC_LEN),
 
@@ -96,14 +96,26 @@ const uint8_t desc_ms_os_20[] =
     'D', 0x00, 'e', 0x00, 'v', 0x00, 'i', 0x00, 'c', 0x00, 'e', 0x00, 'I', 0x00, 'n', 0x00, 't', 0x00, 'e', 0x00,
     'r', 0x00, 'f', 0x00, 'a', 0x00, 'c', 0x00, 'e', 0x00, 'G', 0x00, 'U', 0x00, 'I', 0x00, 'D', 0x00, 's', 0x00, 0x00, 0x00,
     U16_TO_U8S_LE(0x0050), // wPropertyDataLength
-    //bPropertyData: “{975F44D9-0D08-43FD-8B3E-127CA8AFFF9D}”.
-    '{', 0x00, '9', 0x00, '7', 0x00, '5', 0x00, 'F', 0x00, '4', 0x00, '4', 0x00, 'D', 0x00, '9', 0x00, '-', 0x00,
-    '0', 0x00, 'D', 0x00, '0', 0x00, '8', 0x00, '-', 0x00, '4', 0x00, '3', 0x00, 'F', 0x00, 'D', 0x00, '-', 0x00,
-    '8', 0x00, 'B', 0x00, '3', 0x00, 'E', 0x00, '-', 0x00, '1', 0x00, '2', 0x00, '7', 0x00, 'C', 0x00, 'A', 0x00,
-    '8', 0x00, 'A', 0x00, 'F', 0x00, 'F', 0x00, 'F', 0x00, '9', 0x00, 'D', 0x00, '}', 0x00, 0x00, 0x00, 0x00, 0x00
+    //c37cd10d-3934-49be-bb2a-318033d2187e
+    '{', 0x00, 'C', 0x00, '3', 0x00, '7', 0x00,       // wcData_39
+    'C', 0x00, 'D', 0x00, '1', 0x00, '0', 0x00,       // wcData_39
+    'D', 0x00, '-', 0x00, '3', 0x00, '9', 0x00,       // wcData_39
+    '3', 0x00, '4', 0x00, '-', 0x00, '4', 0x00,       // wcData_39
+    '9', 0x00, 'B', 0x00, 'E', 0x00, '-', 0x00,       // wcData_39
+    'B', 0x00, 'B', 0x00, '2', 0x00, 'A', 0x00,       // wcData_39
+    '-', 0x00, '3', 0x00, '1', 0x00, '8', 0x00,       // wcData_39
+    '0', 0x00, '3', 0x00, '3', 0x00, 'D', 0x00,       // wcData_39
+    '2', 0x00, '1', 0x00, '8', 0x00, '7', 0x00,       // wcData_39
+    'E', 0x00, '}', 0x00, 0x00, 0x00, 0x00, 0x00
 };
 
 TU_VERIFY_STATIC(sizeof(desc_ms_os_20) == MS_OS_20_DESC_LEN, "Incorrect size");
+
+const uint8_t desc_ms_os_10_str[] = {
+	MS_OS_DESC_STRING_LENGTH,
+	TUSB_DESC_STRING,
+	'M', 0, 'S', 0, 'F', 0, 'T', 0, '1', 0, '0', 0, '0', 0, (uint8_t)VENDOR_REQUEST_MICROSOFT_1_0,0
+};
 
 uint8_t const desc_bos[] = {
     /* BOS Descriptor */
@@ -124,87 +136,56 @@ uint8_t const desc_bos[] = {
                                             // CapabilityData
     0x00, 0x00, 0x03, 0x06,                 // dwWindowsVersion for Windows 10 and later
     MS_OS_20_DESC_LEN, 0x00,                // wLength 0xB2
-    VENDOR_REQUEST_MICROSOFT,               // bMS_VendorCode - any value. e.g. 0x01
+    VENDOR_REQUEST_MICROSOFT_2_0,           // bMS_VendorCode - any value. e.g. 0x01
     0x00                                    // bAltEnumCmd 0
 };
 
-extern void set_pwm (uint8_t channel,uint8_t value);
+const uint8_t desc_ms_os_10_header[] = {
 
-bool tud_vendor_control_xfer_cb (uint8_t rhport, uint8_t stage, tusb_control_request_t const * request)
-{
-    uint8_t channel = (request->wValue & 0xFF00)>>16;
-    uint8_t value = request->wValue & 0xFF;
-    host_operation_command_t command = (host_operation_command_t)request->bRequest;
-    switch (command) {
-        case COMMAND_QUERY_CAP: {
-            const uint8_t channel_count = VOLTEMETER_CHANNEL_COUNT | VOLTMETER_CHANNEL_REPORT_RAW_VALUE;
-            return tud_control_xfer(rhport, request, (void*)&channel_count, 1);
-        }
-        case COMMAND_SET_USAGE: {
-            set_pwm(channel,value);
-            return true;
-        }
-        case VENDOR_REQUEST_MICROSOFT: {
-          if ( request->wIndex == 7 ) {
-            // Get Microsoft OS 2.0 compatible descriptor
-            uint16_t total_len;
-            memcpy(&total_len, desc_ms_os_20+8, 2);
-            return tud_control_xfer(rhport, request, (void*)(uintptr_t) desc_ms_os_20, total_len);
-          }
-          else {
-            return false;
-          }
-        }
-    }
-    return false;
-}
+    // WCID descriptor
+    0x28, 0x00, 0x00, 0x00,   // dwLength
+    0x00, 0x01,                                       // bcdVersion
+    0x04, 0x00,                                       // wIndex
+    0x01,                                             // bCount
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,         // bReserved_7
 
-void usb_performance_panel_init (void)
-{
-    // Do nothing.
-}
-
-void usb_performance_panel_reset (uint8_t port)
-{
-    // Clear all values.
-    for(int i=0;i<VOLTEMETER_CHANNEL_COUNT;i++) {
-        set_pwm(voltmeter_channels[i],0);
-    }
-}
-
-uint16_t usb_performance_panel_open (uint8_t rhport, tusb_desc_interface_t const * desc_intf, uint16_t max_len)
-{
-    uint16_t drv_len = tu_desc_len(desc_intf);
-    // We don't have special handoff procedures for our device.
-
-    return drv_len;
-}
-
-bool usb_performance_panel_xfer_cb (uint8_t rhport, uint8_t ep_addr, xfer_result_t result, uint32_t xferred_bytes)
-{
-    // Nothing to do: we only have EP 0 Control.
-    return false;
-}
-
-usbd_class_driver_t performance_panel_driver = {
-#if CFG_TUSB_DEBUG >= 2
-        .name= "PerformancePanel",
-#endif
-        .init = usb_performance_panel_init,
-        .reset = usb_performance_panel_reset,
-        .open = usb_performance_panel_open,
-        .control_xfer_cb = tud_vendor_control_xfer_cb,
-        .xfer_cb = usb_performance_panel_xfer_cb,
-        .sof = NULL
+    // WCID function descriptor
+    0x00,                                             // bFirstInterfaceNumber
+    0x01,                                             // bReserved
+    'W', 'I', 'N', 'U', 'S', 'B', 0x00, 0x00,         // cCID_8
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,   // cSubCID_8
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00,               //bReserved_6
 };
 
-usbd_class_driver_t const* usbd_app_driver_get_cb(uint8_t* driver_count)
-{
-    *driver_count = 1;
-    return &performance_panel_driver;
-}
+const uint8_t desc_ms_os_10_detail[] = {
 
-uint8_t const * tud_descriptor_bos_cb(void)
-{
-    return desc_bos;
-}
+  /// WCID property descriptor
+
+    0x8e, 0x00, 0x00, 0x00,                           // dwLength
+    0x00, 0x01,                                       // bcdVersion
+    0x05, 0x00,                                       // wIndex
+    0x01, 0x00,                                       // wCount
+
+    /// registry propter descriptor
+
+    0x84, 0x00, 0x00, 0x00,                           // dwSize
+    0x01, 0x00, 0x00, 0x00,                           // dwPropertyDataType
+    0x28, 0x00,                                       // wPropertyNameLength
+    'D', 0x00, 'e', 0x00, 'v', 0x00, 'i', 0x00,       // wcName_20
+    'c', 0x00, 'e', 0x00, 'I', 0x00, 'n', 0x00,       // wcName_20
+    't', 0x00, 'e', 0x00, 'r', 0x00, 'f', 0x00,       // wcName_20
+    'a', 0x00, 'c', 0x00, 'e', 0x00, 'G', 0x00,       // wcName_20
+    'U', 0x00, 'I', 0x00, 'D', 0x00, 0x00, 0x00,      // wcName_20
+    0x4e, 0x00, 0x00, 0x00,                           // dwPropertyDataLength
+    //c37cd10d-3934-49be-bb2a-318033d2187e
+    '{', 0x00, 'c', 0x00, '3', 0x00, '7', 0x00,       // wcData_39
+    'C', 0x00, 'D', 0x00, '1', 0x00, '0', 0x00,       // wcData_39
+    'D', 0x00, '-', 0x00, '3', 0x00, '9', 0x00,       // wcData_39
+    '3', 0x00, '4', 0x00, '-', 0x00, '4', 0x00,       // wcData_39
+    '9', 0x00, 'B', 0x00, 'E', 0x00, '-', 0x00,       // wcData_39
+    'B', 0x00, 'B', 0x00, '2', 0x00, 'A', 0x00,       // wcData_39
+    '-', 0x00, '3', 0x00, '1', 0x00, '8', 0x00,       // wcData_39
+    '0', 0x00, '3', 0x00, '3', 0x00, 'D', 0x00,       // wcData_39
+    '2', 0x00, '1', 0x00, '8', 0x00, '7', 0x00,       // wcData_39
+    'E', 0x00, '}', 0x00, 0x00, 0x00,                 // wcData_39
+};

@@ -5,7 +5,9 @@ build/**
 # Unwanted config files.
 .vscode/**
 sdkconfig.old
+.cache/**
 
 # Managed by package manager.
 managed_components/**
 dependencies.lock
+

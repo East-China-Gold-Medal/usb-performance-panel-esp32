@@ -69,8 +69,9 @@ typedef enum {
 
 extern const tinyusb_config_t panel_usb_config;
 extern const voltmeter_channel_t voltmeter_channels[VOLTEMETER_CHANNEL_COUNT];
-extern const char *usb_performance_panel_string_desc[];
+extern const uint16_t *usb_performance_panel_string_desc[];
 extern const int usb_performance_panel_string_desc_size;
+extern const off_t usb_performance_panel_string_chinese_offset;
 extern const uint8_t desc_ms_os_20[];
 extern const uint8_t desc_ms_os_10_str[];
 extern const uint8_t desc_bos[];

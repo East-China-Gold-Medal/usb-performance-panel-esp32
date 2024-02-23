@@ -104,44 +104,23 @@ uint8_t const * tud_descriptor_bos_cb(void)
 
 // Overriden function from managed_components/espressif__esp_tinyusb/descriptors_control.c
 
-#define MAX_DESC_BUF_SIZE 32
-#define USB_STRING_DESCRIPTOR_ARRAY_SIZE 8
-
 uint16_t const *__wrap_tud_descriptor_string_cb(uint8_t index, uint16_t langid)
 {
-    (void) langid; // Unused, this driver supports only one language in string descriptors
-    uint8_t chr_count;
-    static uint16_t _desc_str[MAX_DESC_BUF_SIZE];
-
-    if (index == 0) {
-        memcpy(&_desc_str[1], usb_performance_panel_string_desc[0], 2);
-        chr_count = 1;
-    } 
-    else {
-        if (index == 0xEE) {
-            return (uint16_t*)desc_ms_os_10_str;
-        }
-        else {
-            if (index >= USB_STRING_DESCRIPTOR_ARRAY_SIZE) {
-                return NULL;
-            }
-
-            if (usb_performance_panel_string_desc[index] == NULL) {
-                return NULL;
-            }
-
-            const char *str = usb_performance_panel_string_desc[index];
-            chr_count = strnlen(str, MAX_DESC_BUF_SIZE - 1); // Buffer len - header
-
-            // Convert ASCII string into UTF-16
-            for (uint8_t i = 0; i < chr_count; i++) {
-                _desc_str[1 + i] = str[i];
-            }
-        }
+    off_t language_offset = 0;
+    if(index == 0x00) {
+        return usb_performance_panel_string_desc[0]; // Get language ID.
     }
-
-    // First byte is length in bytes (including header), second byte is descriptor type (TUSB_DESC_STRING)
-    _desc_str[0] = (TUSB_DESC_STRING << 8 ) | (2 * chr_count + 2);
-
-    return _desc_str;
+    if (index == 0xEE) {
+        return (uint16_t*)desc_ms_os_10_str;
+    }
+    if(langid == 0x0804) { // Chinese!
+        language_offset = usb_performance_panel_string_chinese_offset;
+    }
+    if (language_offset+index >= usb_performance_panel_string_desc_size) {
+        return NULL;
+    }
+    if (usb_performance_panel_string_desc[language_offset+index] == NULL) {
+        return NULL;
+    }
+    return usb_performance_panel_string_desc[language_offset+index];
 }

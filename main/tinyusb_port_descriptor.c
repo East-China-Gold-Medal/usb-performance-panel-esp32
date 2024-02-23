@@ -8,14 +8,18 @@
 #include "common.h"
 #include <device/usbd_pvt.h>
 
-const char *usb_performance_panel_string_desc[] =
-{
-  (const char[]) { 0x09, 0x04 },    // 0: is supported language is English (0x0409)
-  "East China Gold Medal",          // 1: Manufacturer
-  "Enhanced USB Performance Panel", // 2: Product
-  "CustomizedByHZ",                 // 3: Serials will use unique ID if possible
+const uint16_t *usb_performance_panel_string_desc[] = {
+    u"\u0306" u"\u0409\u0804",                       // 0: is supported language is English (0x0409) / Chinese simplified (Chinese (PRC))
+    u"\u032C" u"East China Gold Medal",              // 1: Manufacturer
+    u"\u033E" u"Enhanced USB Performance Panel",     // 2: Product
+    u"\u031E" u"CustomizedByHZ",                     // 3: Serials will use unique ID if possible
+
+    u"\u030A" u"华东金牌",                               // 4: Manufacturer
+    u"\u0316" u"增强版USB性能面板",                         // 5: Product
+    u"\u030C" u"由hz定制",                              // 6: Serials will use unique ID if possible    
 };
-const int usb_performance_panel_string_desc_size = sizeof(usb_performance_panel_string_desc) / sizeof(const char*);
+const int usb_performance_panel_string_desc_size = sizeof(usb_performance_panel_string_desc) / sizeof(const uint16_t*);
+const off_t usb_performance_panel_string_chinese_offset = 0x3; // Index starts from 1!
 
 tusb_desc_device_t usb_performance_panel_device = {
     .bLength = sizeof(tusb_desc_device_t),
@@ -70,7 +74,7 @@ const union {
 
 const tinyusb_config_t panel_usb_config = {
     .device_descriptor = &usb_performance_panel_device,
-    .string_descriptor = usb_performance_panel_string_desc,
+    .string_descriptor = (const char**)usb_performance_panel_string_desc,     // STUB: DOES NOT COMPATIABLE WITH TINYUSB STACK!
     .string_descriptor_count = usb_performance_panel_string_desc_size,
     .external_phy = false,
     .configuration_descriptor = usb_performance_panel_configuration_descriptor.bytes

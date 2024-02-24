@@ -25,24 +25,13 @@ bool tud_vendor_control_xfer_cb (uint8_t rhport, uint8_t stage, tusb_control_req
             set_pwm(channel,value);
             return true;
         }
-        case VENDOR_REQUEST_MICROSOFT_2_0: {
-          if ( request->wIndex == 7 ) {
-            // Get Microsoft OS 2.0 compatible descriptor
-            uint16_t total_len;
-            memcpy(&total_len, desc_ms_os_20+8, 2);
-            return tud_control_xfer(rhport, request, (void*)(uintptr_t) desc_ms_os_20, total_len);
-          }
-          else {
-            return false;
-          }
-        }
         case VENDOR_REQUEST_MICROSOFT_1_0: {
             if ( request->wIndex == 4 ) {
                 // Get Microsoft OS 1.0 compatible descriptor header
-                return tud_control_xfer(rhport, request, (void*)desc_ms_os_10_header, 40);
+                return tud_control_xfer(rhport, request, (void*)desc_ms_os_10_header, desc_ms_os_10_header[0]);
             }
             else if (request->wIndex == 5) {
-                return tud_control_xfer(rhport, request, (void*)desc_ms_os_10_detail, 142);
+                return tud_control_xfer(rhport, request, (void*)desc_ms_os_10_detail, desc_ms_os_10_detail[0]);
             }
             else {
                 return false;
@@ -95,11 +84,6 @@ usbd_class_driver_t const* usbd_app_driver_get_cb(uint8_t* driver_count)
 {
     *driver_count = 1;
     return &performance_panel_driver;
-}
-
-uint8_t const * tud_descriptor_bos_cb(void)
-{
-    return desc_bos;
 }
 
 // Overriden function from managed_components/espressif__esp_tinyusb/descriptors_control.c

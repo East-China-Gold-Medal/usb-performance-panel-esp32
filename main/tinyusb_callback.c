@@ -13,7 +13,7 @@ extern void set_pwm (uint8_t channel,uint8_t value);
 bool tud_vendor_control_xfer_cb (uint8_t rhport, uint8_t stage, tusb_control_request_t const * request)
 {
     if (stage != CONTROL_STAGE_SETUP) return true;
-    uint8_t channel = (request->wValue & 0xFF00)>>16;
+    uint8_t channel = (request->wValue & 0xFF00)>>8;
     uint8_t value = request->wValue & 0xFF;
     host_operation_command_t command = (host_operation_command_t)request->bRequest;
     switch (command) {
@@ -23,7 +23,7 @@ bool tud_vendor_control_xfer_cb (uint8_t rhport, uint8_t stage, tusb_control_req
         }
         case COMMAND_SET_USAGE: {
             set_pwm(channel,value);
-            return true;
+            return tud_control_status(rhport, request);
         }
         case VENDOR_REQUEST_MICROSOFT_1_0: {
             if ( request->wIndex == 4 ) {
@@ -50,7 +50,7 @@ void usb_performance_panel_reset (uint8_t port)
 {
     // Clear all values.
     for(int i=0;i<VOLTEMETER_CHANNEL_COUNT;i++) {
-        set_pwm(voltmeter_channels[i],0);
+        set_pwm(i,0);
     }
 }
 

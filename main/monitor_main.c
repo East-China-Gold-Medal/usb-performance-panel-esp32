@@ -24,7 +24,21 @@ static gpio_config_t led_config = {
 
 void set_pwm (uint8_t channel,uint8_t value)
 {
-    // TODO
+#ifndef LEDC_HIGH_SPEED_MODE
+    if(ledc_set_duty(LEDC_LOW_SPEED_MODE, (ledc_channel_t)channel, value)!=ESP_OK) {
+#else
+    if(ledc_set_duty(channel&1, (ledc_channel_t)channel>>1, value)!=ESP_OK) {
+#endif
+        gpio_set_level(15,1);
+    }
+
+#ifndef LEDC_HIGH_SPEED_MODE
+    if(ledc_update_duty(LEDC_LOW_SPEED_MODE, (ledc_channel_t)channel)!=ESP_OK) {
+#else
+    if(ledc_update_duty(channel&1, (ledc_channel_t)channel>>1)!=ESP_OK) {
+#endif
+        gpio_set_level(15,1);
+    }
 }
 
 void app_main (void)
@@ -33,24 +47,30 @@ void app_main (void)
 
     ESP_ERROR_CHECK(tinyusb_driver_install(&panel_usb_config));
 
-    for(int i=0;i<7;i++) { // TODO: All 16 Channels.
+    for(int i=0;i<VOLTEMETER_CHANNEL_COUNT;i++) {
         ledc_timer_config_t ledc_timer = {
+#ifdef LEDC_HIGH_SPEED_MODE
+            .speed_mode       = i&1,
+#else
             .speed_mode       = LEDC_LOW_SPEED_MODE,
+#endif
             .duty_resolution  = LEDC_TIMER_8_BIT,
+#ifdef LEDC_HIGH_SPEED_MODE
+            .timer_num        = i >> 2,
+#else
             .timer_num        = i >> 1,
+#endif
             .freq_hz          = LEDC_FREQUENCY,
             .clk_cfg          = LEDC_REF_TICK
         };
         if(ledc_timer_config(&ledc_timer)!=ESP_OK) {
             gpio_set_level(15,1);
         }
+#ifdef LEDC_HIGH_SPEED_MODE
+        if(ledc_set_pin(voltmeter_channels[i], i&1, (ledc_channel_t)(i>>1))!=ESP_OK) {
+#else
         if(ledc_set_pin(voltmeter_channels[i], LEDC_LOW_SPEED_MODE, (ledc_channel_t)i)!=ESP_OK) {
-            gpio_set_level(15,1);
-        }
-        if(ledc_set_duty(LEDC_LOW_SPEED_MODE, (ledc_channel_t)i, 0x80)!=ESP_OK) {
-            gpio_set_level(15,1);
-        }
-        if(ledc_update_duty(LEDC_LOW_SPEED_MODE, (ledc_channel_t)i)!=ESP_OK) {
+#endif
             gpio_set_level(15,1);
         }
     }
@@ -72,7 +92,7 @@ const voltmeter_channel_t voltmeter_channels[VOLTEMETER_CHANNEL_COUNT] = {
     VOLTMETER_CHANNEL_5,
     VOLTMETER_CHANNEL_6,
     VOLTMETER_CHANNEL_7,
-#if 0
+#ifdef LEDC_HIGH_SPEED_MODE
     VOLTMETER_CHANNEL_8,
     VOLTMETER_CHANNEL_9,
     VOLTMETER_CHANNEL_10,

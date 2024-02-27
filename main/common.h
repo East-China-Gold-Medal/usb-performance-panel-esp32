@@ -11,7 +11,11 @@
 #include <stdlib.h>
 #include <tinyusb.h>
 
+#ifdef LEDC_HIGH_SPEED_MODE
 #define VOLTEMETER_CHANNEL_COUNT ((uint8_t)16)
+#else
+#define VOLTEMETER_CHANNEL_COUNT ((uint8_t)8)
+#endif
 
 // Microsoft OS 2.0 Descriptor
 
@@ -39,6 +43,7 @@ typedef const enum {
     VOLTMETER_CHANNEL_5=7,
     VOLTMETER_CHANNEL_6=8,
     VOLTMETER_CHANNEL_7=9,
+#ifdef LEDC_HIGH_SPEED_MODE
     VOLTMETER_CHANNEL_8=40,
     VOLTMETER_CHANNEL_9=39,
     VOLTMETER_CHANNEL_10=37,
@@ -47,6 +52,7 @@ typedef const enum {
     VOLTMETER_CHANNEL_13=36,
     VOLTMETER_CHANNEL_14=33,
     VOLTMETER_CHANNEL_15=34
+#endif
 } voltmeter_channel_t;
 
 typedef const enum {
